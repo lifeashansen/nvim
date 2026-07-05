@@ -10,7 +10,7 @@ o.shiftwidth = 4
 o.expandtab = true
 
 o.undofile = true
-o.swapfile = true
+o.swapfile = false
 o.termguicolors = true
 o.scrolloff = 10
 
@@ -22,7 +22,6 @@ end
 
 vim.pack.add({
 	{ src = gh("nvim-treesitter/nvim-treesitter"), name = "nvim-treesitter" },
-	{ src = gh("neovim/nvim-lspconfig"), name = "nvim-lspconfig" },
 	{ src = gh("nvim-mini/mini.nvim"), name = "mini.nvim" },
 	-- Blink cmp
 	{ src = gh("saghen/blink.lib"), name = "blink.lib" },
@@ -42,14 +41,53 @@ vim.pack.add({
 	{ src = gh("MunifTanjim/nui.nvim"), name = "nui" },
 	-- optional, but recommended
 	{ src = gh("nvim-tree/nvim-web-devicons"), name = "nvim-web-devicons" },
+
+	-- Snacks
+	{ src = gh("folke/snacks.nvim"), name = "snacks.nvim" },
+
+	-- Mason + Lsp
+	{ src = gh("mason-org/mason.nvim"), name = "mason.nvim" },
+	{ src = gh("mason-org/mason-lspconfig.nvim"), name = "mason.lspconfig" },
+	{ src = gh("neovim/nvim-lspconfig"), name = "nvim-lspconfig" },
+
+	--Trouble
+	{ src = gh("folke/trouble.nvim"), name = "trouble.nvim" },
 })
 
 -- -- Only after first installation or updates
 -- local cmp = require("blink.cmp")
 -- cmp.build():pwait()
 -- cmp.setup()
+require("mason").setup()
+require("mason-lspconfig").setup({
+	ensure_installed = {
+		"lua_ls",
+		"gopls",
+		"clangd",
+		"svelte",
+		"ruff",
+		"ty",
+		"ts_ls",
+		"terraformls",
+		"cssls",
+		"ansiblels",
+	},
+	automatic_enable = {
+		"lua_ls",
+		"go",
+		"clangd",
+		"svelte-language-server",
+		"ruff",
+		"ty",
+		"ts_ls",
+		"terraformls",
+		"cssls",
+		"ansiblels",
+		exclude = {},
+	},
+})
 
-vim.lsp.enable({ "lua_ls", "clangd", "gopls", "ruff", "rust_analyzer", "ty" })
+-- vim.lsp.enable({ "lua_ls", "clangd", "gopls", "ruff", "rust_analyzer", "ty", "svelte" })
 
 require("catppuccin").setup({
 	flavour = "mocha",
@@ -63,6 +101,8 @@ require("wakatime").setup()
 require("mini.icons").setup()
 require("mini.files").setup()
 require("mini.pairs").setup()
+require("mini.tabline").setup()
+-- require("mini.statusline").setup()
 -- require("mini.completion").setup()
 require("neo-tree").setup({})
 require("blink.cmp").setup()
@@ -86,18 +126,29 @@ require("nvim-treesitter").setup({
 		"json",
 		"yaml",
 		"toml",
+		"ansible",
+		"terraform",
 	},
 	auto_install = true,
+	highlight = {
+		enable = true,
+	},
 })
+
+require("trouble").setup({})
 
 require("conform").setup({
 	formatters_by_ft = {
 		lua = { "stylua" },
 		c = { "clang-format" },
 		cpp = { "clang-format" },
+		css = { "prettierd" },
 		go = { "gofmt" },
 		rust = { "rustfmt" },
 		py = { "ruff" },
+		svelte = { "prettierd" },
+		typescript = { "prettierd" },
+		javascript = { "prettierd" },
 	},
 	format_on_save = {
 		timeout_ms = 500,
@@ -110,7 +161,7 @@ vim.keymap.set("n", "<Leader>e", "<CMD>Neotree position=float<Cr>")
 vim.keymap.set("n", "<Leader>ff", "<CMD>FzfLua files<Cr>")
 vim.keymap.set("n", "<Leader>fb", "<CMD>FzfLua buffers<Cr>")
 vim.keymap.set("n", "<Leader>d", function()
-	vim.diagnostic.setqflist()
+	vim.diagnostic.setqflist({ bufnr = 0 })
 end)
 vim.keymap.set("n", "<Leader>dx", "<CMD>cclose<Cr>")
 
@@ -119,3 +170,14 @@ vim.keymap.set("n", "<Leader>x", "<CMD>bdelete<Cr>")
 vim.diagnostic.config({
 	virtual_lines = false,
 })
+
+local langs = { "svelte", "c", "cpp", "python", "javascript", "typescript", "css", "terraform", "ansible" }
+
+for _, lang in pairs(langs) do
+	vim.api.nvim_create_autocmd("FileType", {
+		pattern = { lang },
+		callback = function()
+			vim.treesitter.start()
+		end,
+	})
+end
